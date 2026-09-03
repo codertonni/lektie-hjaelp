@@ -1,0 +1,886 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Engelsk-spillet</title>
+<style>
+  :root{
+    --bg1:#7bd7f7;
+    --bg2:#ffd66b;
+    --card:#ffffff;
+    --ink:#2c3e50;
+    --good:#3ecf6a;
+    --bad:#ff6b6b;
+    --accent:#ff8fb3;
+    --accent2:#8e6bff;
+    --shadow: 0 8px 0 rgba(0,0,0,0.12);
+  }
+  *{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    min-height:100vh;
+    font-family:"Comic Sans MS","Trebuchet MS","Segoe UI",sans-serif;
+    background:linear-gradient(160deg,var(--bg1),var(--bg2));
+    background-attachment:fixed;
+    color:var(--ink);
+    display:flex;
+    justify-content:center;
+    padding:16px;
+  }
+  #app{
+    width:100%;
+    max-width:720px;
+  }
+  .screen{display:none;}
+  .screen.active{display:block; animation:pop .25s ease;}
+  @keyframes pop{from{transform:scale(.96);opacity:0;}to{transform:scale(1);opacity:1;}}
+
+  .topbar{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    background:rgba(255,255,255,0.85);
+    border-radius:18px;
+    padding:10px 16px;
+    margin-bottom:14px;
+    box-shadow:var(--shadow);
+    font-weight:bold;
+  }
+  .topbar .stars{color:#e8a900; font-size:1.1em;}
+  .topbar .name{color:var(--accent2);}
+
+  .card{
+    background:var(--card);
+    border-radius:22px;
+    padding:22px;
+    box-shadow:var(--shadow);
+    margin-bottom:16px;
+  }
+
+  h1{font-size:1.8em; text-align:center; margin:.2em 0;}
+  h2{font-size:1.4em; text-align:center; margin:.3em 0 .6em;}
+  p.sub{text-align:center; opacity:.75; margin-top:-6px;}
+
+  .mascot{font-size:4.5em; text-align:center; margin:6px 0; animation:bob 2.4s ease-in-out infinite;}
+  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+  input[type=text]{
+    width:100%;
+    padding:14px;
+    font-size:1.2em;
+    border-radius:14px;
+    border:3px solid #ddd;
+    font-family:inherit;
+    text-align:center;
+  }
+  input[type=text]:focus{outline:none; border-color:var(--accent2);}
+
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border:none;
+  }
+  .btn{
+    display:block;
+    width:100%;
+    padding:16px;
+    font-size:1.2em;
+    font-weight:bold;
+    border-radius:16px;
+    background:var(--accent2);
+    color:#fff;
+    box-shadow:0 5px 0 #6a4fd1;
+    margin-top:14px;
+    transition:transform .06s;
+  }
+  .btn:active{transform:translateY(4px); box-shadow:0 1px 0 #6a4fd1;}
+  .btn.secondary{background:#bbb; box-shadow:0 5px 0 #888;}
+  .btn.secondary:active{box-shadow:0 1px 0 #888;}
+  .btn.good{background:var(--good); box-shadow:0 5px 0 #299b4a;}
+  .btn.good:active{box-shadow:0 1px 0 #299b4a;}
+
+  .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px;}
+  .cat-card{
+    background:#fff;
+    border-radius:18px;
+    padding:16px 10px;
+    text-align:center;
+    box-shadow:var(--shadow);
+    border:4px solid transparent;
+    transition:transform .08s;
+  }
+  .cat-card:active{transform:scale(.97);}
+  .cat-card.selected{border-color:var(--accent2);}
+  .cat-card .emoji{font-size:2.4em;}
+  .cat-card .name{font-weight:bold; margin-top:4px;}
+  .cat-card .starrow{margin-top:4px; letter-spacing:2px; color:#e8a900;}
+
+  .pillrow{display:flex; gap:10px; justify-content:center; flex-wrap:wrap;}
+  .pill{
+    padding:10px 18px;
+    border-radius:999px;
+    background:#eee;
+    font-weight:bold;
+    box-shadow:var(--shadow);
+  }
+  .pill.selected{background:var(--accent2); color:#fff;}
+
+  .exrow{display:grid; grid-template-columns:repeat(2,1fr); gap:10px;}
+  .exbtn{
+    padding:14px 8px;
+    border-radius:16px;
+    background:#f4f4ff;
+    font-weight:bold;
+    text-align:center;
+    box-shadow:var(--shadow);
+  }
+  .exbtn.selected{background:var(--accent); color:#fff;}
+  .exbtn .e{font-size:1.6em; display:block;}
+
+  .qprogress{text-align:center; font-weight:bold; opacity:.7; margin-bottom:6px;}
+  .prompt-emoji{font-size:5em; text-align:center; margin:6px 0;}
+  .prompt-word{font-size:1.6em; text-align:center; font-weight:bold; color:var(--accent2);}
+
+  .choices{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-top:16px;}
+  .choice{
+    padding:16px 8px;
+    background:#f4f4ff;
+    border-radius:16px;
+    font-size:1.15em;
+    font-weight:bold;
+    box-shadow:var(--shadow);
+    text-align:center;
+  }
+  .choice.emoji-choice{font-size:2.6em; padding:20px 8px;}
+  .choice.correct{background:var(--good); color:#fff;}
+  .choice.wrong{background:var(--bad); color:#fff;}
+  .choice:disabled{opacity:.6;}
+
+  .feedback{text-align:center; font-size:1.3em; font-weight:bold; min-height:1.6em; margin-top:10px;}
+  .feedback.good{color:var(--good);}
+  .feedback.bad{color:var(--bad);}
+
+  .speakbtn{
+    display:block;
+    margin:10px auto;
+    padding:12px 20px;
+    border-radius:14px;
+    background:#fff3cd;
+    font-weight:bold;
+    box-shadow:var(--shadow);
+  }
+
+  .letterhint{
+    text-align:center;
+    font-size:1.5em;
+    letter-spacing:6px;
+    font-weight:bold;
+    color:#999;
+    margin:10px 0;
+  }
+
+  .matchgrid{display:grid; grid-template-columns:repeat(3,1fr); gap:10px; margin-top:10px;}
+  .matchcard{
+    aspect-ratio:1/1;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#f4f4ff;
+    border-radius:14px;
+    font-size:1.6em;
+    font-weight:bold;
+    text-align:center;
+    box-shadow:var(--shadow);
+    padding:4px;
+  }
+  .matchcard.emoji{font-size:2.2em;}
+  .matchcard.picked{background:var(--accent);color:#fff;}
+  .matchcard.matched{background:var(--good); color:#fff; opacity:.55;}
+  .matchcard.wrongflash{background:var(--bad); color:#fff;}
+
+  .streakbar{
+    display:flex; justify-content:center; gap:4px; margin-top:8px;
+  }
+  .streakbar span{font-size:1.3em; opacity:.25;}
+  .streakbar span.on{opacity:1;}
+
+  .badge{
+    display:inline-block;
+    background:#fff3cd;
+    border-radius:14px;
+    padding:10px 14px;
+    margin:6px;
+    font-weight:bold;
+    box-shadow:var(--shadow);
+  }
+  .badgegrid{display:flex; flex-wrap:wrap; justify-content:center;}
+
+  #confetti-layer{
+    position:fixed; inset:0; pointer-events:none; overflow:hidden; z-index:999;
+  }
+  .confetti-piece{
+    position:absolute; top:-20px; width:10px; height:14px; opacity:.9;
+    animation:confettifall linear forwards;
+  }
+  @keyframes confettifall{
+    to{ transform:translateY(110vh) rotate(540deg); opacity:.2; }
+  }
+
+  .starsbig{text-align:center; font-size:2.4em; color:#e8a900; margin:10px 0;}
+  .stat{display:flex; justify-content:space-between; padding:6px 0; font-size:1.1em;}
+</style>
+</head>
+<body>
+<div id="confetti-layer"></div>
+<div id="app">
+
+  <!-- START SCREEN -->
+  <section id="screen-start" class="screen active">
+    <div class="card">
+      <div class="mascot">🦉</div>
+      <h1>Engelsk-spillet</h1>
+      <p class="sub">Lær engelske ord på en sjov måde!</p>
+      <p style="text-align:center; font-weight:bold;">Hvad hedder du?</p>
+      <input type="text" id="nameInput" placeholder="Skriv dit navn her" maxlength="20">
+      <button class="btn" id="startBtn">Kom i gang! 🚀</button>
+    </div>
+  </section>
+
+  <!-- MENU SCREEN -->
+  <section id="screen-menu" class="screen">
+    <div class="topbar">
+      <span class="name" id="hiName">Hej!</span>
+      <span class="stars">⭐ <span id="totalStars">0</span></span>
+    </div>
+
+    <div class="card">
+      <h2>Vælg et emne</h2>
+      <div class="grid" id="categoryGrid"></div>
+    </div>
+
+    <div class="card" id="levelCard">
+      <h2>Vælg niveau</h2>
+      <div class="pillrow" id="levelRow"></div>
+    </div>
+
+    <div class="card">
+      <h2>Vælg opgavetype</h2>
+      <div class="exrow" id="exerciseRow"></div>
+    </div>
+
+    <button class="btn good" id="playBtn">Spil! 🎮</button>
+    <button class="btn secondary" id="badgesBtn">Mine mærker 🏅</button>
+  </section>
+
+  <!-- QUIZ SCREEN -->
+  <section id="screen-quiz" class="screen">
+    <div class="topbar">
+      <span id="quizCatLabel">Emne</span>
+      <span class="stars">⭐ <span id="roundStars">0</span></span>
+    </div>
+    <div class="qprogress" id="qProgress">Spørgsmål 1 / 8</div>
+    <div class="streakbar" id="streakBar"></div>
+    <div class="card" id="quizCard"></div>
+    <div id="quitArea"></div>
+  </section>
+
+  <!-- SUMMARY SCREEN -->
+  <section id="screen-summary" class="screen">
+    <div class="card">
+      <div class="mascot" id="summaryMascot">🎉</div>
+      <h1 id="summaryTitle">Godt klaret!</h1>
+      <div class="starsbig" id="summaryStars"></div>
+      <div class="stat"><span>Rigtige svar</span><span id="sumCorrect">0/0</span></div>
+      <div class="stat"><span>Bedste stribe</span><span id="sumStreak">0</span></div>
+      <div id="newBadgeArea"></div>
+      <button class="btn good" id="playAgainBtn">Spil igen 🔁</button>
+      <button class="btn" id="toMenuBtn">Tilbage til menu</button>
+    </div>
+  </section>
+
+  <!-- BADGES SCREEN -->
+  <section id="screen-badges" class="screen">
+    <div class="card">
+      <h1>Mine mærker 🏅</h1>
+      <div class="badgegrid" id="badgeList"></div>
+      <button class="btn" id="badgesBackBtn">Tilbage</button>
+    </div>
+  </section>
+
+</div>
+
+<script>
+/* ---------- DATA ---------- */
+const CATEGORIES = {
+  farver: { name:"Farver", emoji:"🎨", words:[
+    {en:"red",da:"rød",emoji:"🔴"},{en:"blue",da:"blå",emoji:"🔵"},
+    {en:"green",da:"grøn",emoji:"🟢"},{en:"yellow",da:"gul",emoji:"🟡"},
+    {en:"orange",da:"orange",emoji:"🟠"},{en:"purple",da:"lilla",emoji:"🟣"},
+    {en:"pink",da:"lyserød",emoji:"🌸"},{en:"black",da:"sort",emoji:"⚫"},
+    {en:"white",da:"hvid",emoji:"⚪"},{en:"brown",da:"brun",emoji:"🟤"},
+  ]},
+  dyr: { name:"Dyr", emoji:"🐶", words:[
+    {en:"dog",da:"hund",emoji:"🐶"},{en:"cat",da:"kat",emoji:"🐱"},
+    {en:"cow",da:"ko",emoji:"🐮"},{en:"pig",da:"gris",emoji:"🐷"},
+    {en:"horse",da:"hest",emoji:"🐴"},{en:"sheep",da:"får",emoji:"🐑"},
+    {en:"bird",da:"fugl",emoji:"🐦"},{en:"fish",da:"fisk",emoji:"🐟"},
+    {en:"rabbit",da:"kanin",emoji:"🐰"},{en:"duck",da:"and",emoji:"🦆"},
+    {en:"lion",da:"løve",emoji:"🦁"},{en:"elephant",da:"elefant",emoji:"🐘"},
+    {en:"monkey",da:"abe",emoji:"🐵"},{en:"bear",da:"bjørn",emoji:"🐻"},
+    {en:"frog",da:"frø",emoji:"🐸"},
+  ]},
+  tal: { name:"Tal", emoji:"🔢", words:[
+    {en:"one",da:"en",emoji:"1️⃣"},{en:"two",da:"to",emoji:"2️⃣"},
+    {en:"three",da:"tre",emoji:"3️⃣"},{en:"four",da:"fire",emoji:"4️⃣"},
+    {en:"five",da:"fem",emoji:"5️⃣"},{en:"six",da:"seks",emoji:"6️⃣"},
+    {en:"seven",da:"syv",emoji:"7️⃣"},{en:"eight",da:"otte",emoji:"8️⃣"},
+    {en:"nine",da:"ni",emoji:"9️⃣"},{en:"ten",da:"ti",emoji:"🔟"},
+  ]},
+  familie: { name:"Familie", emoji:"👨‍👩‍👧", words:[
+    {en:"mother",da:"mor",emoji:"👩"},{en:"father",da:"far",emoji:"👨"},
+    {en:"sister",da:"søster",emoji:"👧"},{en:"brother",da:"bror",emoji:"👦"},
+    {en:"baby",da:"baby",emoji:"👶"},{en:"grandmother",da:"bedstemor",emoji:"👵"},
+    {en:"grandfather",da:"bedstefar",emoji:"👴"},{en:"family",da:"familie",emoji:"👨‍👩‍👧‍👦"},
+  ]},
+  mad: { name:"Mad", emoji:"🍎", words:[
+    {en:"apple",da:"æble",emoji:"🍎"},{en:"banana",da:"banan",emoji:"🍌"},
+    {en:"bread",da:"brød",emoji:"🍞"},{en:"milk",da:"mælk",emoji:"🥛"},
+    {en:"cheese",da:"ost",emoji:"🧀"},{en:"cake",da:"kage",emoji:"🎂"},
+    {en:"pizza",da:"pizza",emoji:"🍕"},{en:"ice cream",da:"is",emoji:"🍦"},
+    {en:"egg",da:"æg",emoji:"🥚"},{en:"water",da:"vand",emoji:"💧"},
+    {en:"juice",da:"juice",emoji:"🧃"},{en:"cookie",da:"småkage",emoji:"🍪"},
+  ]},
+  toj: { name:"Tøj", emoji:"👕", words:[
+    {en:"shirt",da:"trøje",emoji:"👕"},{en:"pants",da:"bukser",emoji:"👖"},
+    {en:"shoes",da:"sko",emoji:"👟"},{en:"hat",da:"hue",emoji:"🧢"},
+    {en:"dress",da:"kjole",emoji:"👗"},{en:"socks",da:"strømper",emoji:"🧦"},
+    {en:"jacket",da:"jakke",emoji:"🧥"},
+  ]},
+  folelser: { name:"Følelser", emoji:"😊", words:[
+    {en:"happy",da:"glad",emoji:"😊"},{en:"sad",da:"ked af det",emoji:"😢"},
+    {en:"angry",da:"vred",emoji:"😠"},{en:"tired",da:"træt",emoji:"😴"},
+    {en:"scared",da:"bange",emoji:"😨"},{en:"surprised",da:"overrasket",emoji:"😲"},
+    {en:"excited",da:"spændt",emoji:"🤩"},
+  ]},
+  transport: { name:"Transport", emoji:"🚗", words:[
+    {en:"car",da:"bil",emoji:"🚗"},{en:"bus",da:"bus",emoji:"🚌"},
+    {en:"train",da:"tog",emoji:"🚆"},{en:"bike",da:"cykel",emoji:"🚲"},
+    {en:"plane",da:"fly",emoji:"✈️"},{en:"boat",da:"båd",emoji:"⛵"},
+    {en:"truck",da:"lastbil",emoji:"🚚"},{en:"motorcycle",da:"motorcykel",emoji:"🏍️"},
+    {en:"taxi",da:"taxa",emoji:"🚕"},{en:"helicopter",da:"helikopter",emoji:"🚁"},
+  ]},
+  husholdning: { name:"Husholdningsting", emoji:"🏠", words:[
+    {en:"bed",da:"seng",emoji:"🛏️"},{en:"chair",da:"stol",emoji:"🪑"},
+    {en:"door",da:"dør",emoji:"🚪"},{en:"window",da:"vindue",emoji:"🪟"},
+    {en:"lamp",da:"lampe",emoji:"💡"},{en:"key",da:"nøgle",emoji:"🔑"},
+    {en:"mirror",da:"spejl",emoji:"🪞"},{en:"clock",da:"ur",emoji:"🕰️"},
+    {en:"television",da:"fjernsyn",emoji:"📺"},{en:"cup",da:"kop",emoji:"☕"},
+  ]},
+  vejr: { name:"Vejr", emoji:"☀️", words:[
+    {en:"sun",da:"sol",emoji:"☀️"},{en:"rain",da:"regn",emoji:"🌧️"},
+    {en:"snow",da:"sne",emoji:"❄️"},{en:"wind",da:"vind",emoji:"🌬️"},
+    {en:"cloud",da:"sky",emoji:"☁️"},{en:"storm",da:"storm",emoji:"⛈️"},
+    {en:"rainbow",da:"regnbue",emoji:"🌈"},{en:"fog",da:"tåge",emoji:"🌫️"},
+    {en:"lightning",da:"lyn",emoji:"⚡"},
+  ]},
+  krop: { name:"Kroppen", emoji:"🧍", words:[
+    {en:"head",da:"hoved",emoji:"👤"},{en:"eye",da:"øje",emoji:"👁️"},
+    {en:"ear",da:"øre",emoji:"👂"},{en:"nose",da:"næse",emoji:"👃"},
+    {en:"mouth",da:"mund",emoji:"👄"},{en:"hand",da:"hånd",emoji:"✋"},
+    {en:"foot",da:"fod",emoji:"🦶"},{en:"leg",da:"ben",emoji:"🦵"},
+    {en:"arm",da:"arm",emoji:"💪"},
+  ]},
+  skole: { name:"Skole", emoji:"🎒", words:[
+    {en:"book",da:"bog",emoji:"📖"},{en:"pencil",da:"blyant",emoji:"✏️"},
+    {en:"pen",da:"kuglepen",emoji:"🖊️"},{en:"backpack",da:"skoletaske",emoji:"🎒"},
+    {en:"scissors",da:"saks",emoji:"✂️"},{en:"ruler",da:"lineal",emoji:"📏"},
+    {en:"notebook",da:"notesbog",emoji:"📓"},{en:"crayon",da:"farveblyant",emoji:"🖍️"},
+    {en:"bell",da:"klokke",emoji:"🔔"},
+  ]},
+};
+
+const LEVELS = {
+  1: { label:"Nem", stars:1, choices:4, wordsPerRound:6, pairs:4, hints:99, icons:true },
+  2: { label:"Mellem", stars:2, choices:6, wordsPerRound:8, pairs:6, hints:3, icons:true },
+  3: { label:"Svær", stars:3, choices:8, wordsPerRound:10, pairs:8, hints:1, icons:false },
+};
+
+const EXERCISES = {
+  choice:  { name:"Vælg svar",  emoji:"✅" },
+  spell:   { name:"Stav ordet", emoji:"⌨️" },
+  match:   { name:"Match par",  emoji:"🧩" },
+  listen:  { name:"Lyt og vælg",emoji:"🔊" },
+};
+
+const BADGES = [
+  { id:"first", name:"Første skridt", emoji:"👣", cond:s => s.roundsPlayed >= 1 },
+  { id:"stars25", name:"25 stjerner", emoji:"⭐", cond:s => s.totalStars >= 25 },
+  { id:"stars75", name:"75 stjerner", emoji:"🌟", cond:s => s.totalStars >= 75 },
+  { id:"streak10", name:"Stribe på 10", emoji:"🔥", cond:s => s.bestStreakEver >= 10 },
+  { id:"allcats", name:"Rundt om det hele", emoji:"🌈", cond:s => Object.keys(CATEGORIES).every(c => (s.catBestStars[c]||0) >= 1) },
+  { id:"perfect", name:"Perfekt runde", emoji:"💯", cond:s => s.hadPerfectRound },
+];
+
+const PRAISE = ["Fantastisk! 🎉","Sådan skal det gøres! 💪","Du er en stjerne! ⭐","Super flot! 🌟","Godt gået! 👏","Wow, det var hurtigt! ⚡"];
+const ENCOURAGE = ["Næsten! Prøv igen 💛","Det er ok, du lærer! 🌱","Godt forsøgt! 🙂","Fortsæt, du klarer det! 💪"];
+
+/* ---------- STATE / STORAGE ---------- */
+const SAVE_KEY = "engelsk_spil_save_v1";
+function loadState(){
+  try{
+    const raw = localStorage.getItem(SAVE_KEY);
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return { name:"", totalStars:0, roundsPlayed:0, bestStreakEver:0, catBestStars:{}, badges:[], hadPerfectRound:false };
+}
+function saveState(){ try{ localStorage.setItem(SAVE_KEY, JSON.stringify(state)); }catch(e){} }
+let state = loadState();
+
+let sel = { category:"farver", level:1, exercise:"choice" };
+let round = null; // active round data
+
+/* ---------- HELPERS ---------- */
+function $(id){ return document.getElementById(id); }
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+  $(id).classList.add("active");
+}
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){ const j = Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+  return a;
+}
+function sample(arr,n){ return shuffle(arr).slice(0,n); }
+function smoothScrollTo(targetEl, duration=650){
+  const startY = window.scrollY || window.pageYOffset;
+  const targetY = startY + targetEl.getBoundingClientRect().top - 10;
+  const startTime = performance.now();
+  function easeInOutQuad(t){ return t<0.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+  function step(now){
+    const progress = Math.min((now-startTime)/duration, 1);
+    window.scrollTo(0, startY + (targetY-startY)*easeInOutQuad(progress));
+    if(progress < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+function speak(text){
+  if(!('speechSynthesis' in window)) return;
+  try{
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = "en-US";
+    u.rate = 0.85;
+    speechSynthesis.speak(u);
+  }catch(e){}
+}
+function spawnConfetti(){
+  const layer = $("confetti-layer");
+  const colors = ["#ff8fb3","#8e6bff","#3ecf6a","#ffd66b","#7bd7f7","#ff6b6b"];
+  for(let i=0;i<40;i++){
+    const p = document.createElement("div");
+    p.className = "confetti-piece";
+    p.style.left = Math.random()*100+"vw";
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.animationDuration = (1.6+Math.random()*1.2)+"s";
+    p.style.transform = `rotate(${Math.random()*360}deg)`;
+    layer.appendChild(p);
+    setTimeout(()=>p.remove(), 3200);
+  }
+}
+
+/* ---------- START SCREEN ---------- */
+$("nameInput").value = state.name || "";
+$("startBtn").addEventListener("click", ()=>{
+  const v = $("nameInput").value.trim();
+  state.name = v || "Ven";
+  saveState();
+  enterMenu();
+});
+
+function enterMenu(){
+  $("hiName").textContent = "Hej, " + state.name + "! 👋";
+  $("totalStars").textContent = state.totalStars;
+  renderCategoryGrid();
+  renderLevelRow();
+  renderExerciseRow();
+  showScreen("screen-menu");
+}
+
+/* ---------- MENU RENDER ---------- */
+function renderCategoryGrid(){
+  const grid = $("categoryGrid");
+  grid.innerHTML = "";
+  Object.entries(CATEGORIES).forEach(([key,cat])=>{
+    const best = state.catBestStars[key] || 0;
+    const div = document.createElement("div");
+    div.className = "cat-card" + (sel.category===key ? " selected":"");
+    div.innerHTML = `<div class="emoji">${cat.emoji}</div><div class="name">${cat.name}</div>
+      <div class="starrow">${"⭐".repeat(best)}${"☆".repeat(3-best)}</div>`;
+    div.addEventListener("click", ()=>{
+      sel.category = key;
+      renderCategoryGrid();
+      smoothScrollTo($("levelCard"));
+    });
+    grid.appendChild(div);
+  });
+}
+function renderLevelRow(){
+  const row = $("levelRow");
+  row.innerHTML = "";
+  Object.entries(LEVELS).forEach(([lvl,cfg])=>{
+    const b = document.createElement("div");
+    b.className = "pill" + (String(sel.level)===lvl ? " selected":"");
+    b.textContent = cfg.label;
+    b.addEventListener("click", ()=>{ sel.level = Number(lvl); renderLevelRow(); });
+    row.appendChild(b);
+  });
+}
+function renderExerciseRow(){
+  const row = $("exerciseRow");
+  row.innerHTML = "";
+  Object.entries(EXERCISES).forEach(([key,ex])=>{
+    const b = document.createElement("div");
+    b.className = "exbtn" + (sel.exercise===key ? " selected":"");
+    b.innerHTML = `<span class="e">${ex.emoji}</span>${ex.name}`;
+    b.addEventListener("click", ()=>{ sel.exercise = key; renderExerciseRow(); });
+    row.appendChild(b);
+  });
+}
+$("playBtn").addEventListener("click", startRound);
+$("badgesBtn").addEventListener("click", ()=>{ renderBadges(); showScreen("screen-badges"); });
+$("badgesBackBtn").addEventListener("click", ()=> showScreen("screen-menu"));
+function renderQuitArea(){
+  const area = $("quitArea");
+  area.innerHTML = `<button class="btn secondary" id="quitBtn">Afslut og gå til menu</button>`;
+  $("quitBtn").addEventListener("click", ()=>{
+    area.innerHTML = `
+      <p style="text-align:center; font-weight:bold; margin-bottom:8px;">Vil du afslutte og gå til menuen?</p>
+      <div style="display:flex; gap:10px;">
+        <button class="btn good" id="quitYes" style="margin-top:0;">Ja, afslut</button>
+        <button class="btn secondary" id="quitNo" style="margin-top:0;">Nej, fortsæt</button>
+      </div>`;
+    $("quitYes").addEventListener("click", enterMenu);
+    $("quitNo").addEventListener("click", renderQuitArea);
+  });
+}
+$("toMenuBtn").addEventListener("click", enterMenu);
+$("playAgainBtn").addEventListener("click", startRound);
+
+/* ---------- ROUND SETUP ---------- */
+function startRound(){
+  const cat = CATEGORIES[sel.category];
+  const lvl = LEVELS[sel.level];
+  const n = Math.min(lvl.wordsPerRound, cat.words.length);
+  const words = sample(cat.words, n);
+  round = {
+    exercise: sel.exercise,
+    category: sel.category,
+    level: sel.level,
+    words,
+    index: 0,
+    correct: 0,
+    streak: 0,
+    bestStreak: 0,
+    hintsLeft: lvl.hints,
+  };
+  $("quizCatLabel").textContent = cat.emoji + " " + cat.name + " · " + lvl.label;
+  $("roundStars").textContent = round.correct;
+  showScreen("screen-quiz");
+  renderQuitArea();
+  if(round.exercise === "match"){
+    renderMatchQuestion();
+  } else {
+    renderQuestion();
+  }
+}
+function updateProgress(){
+  $("qProgress").textContent = `Spørgsmål ${Math.min(round.index+1, round.words.length)} / ${round.words.length}`;
+  const bar = $("streakBar");
+  bar.innerHTML = "";
+  for(let i=0;i<5;i++){
+    const s = document.createElement("span");
+    s.textContent = "🔥";
+    if(i < round.streak%5 || (round.streak>=5 && i<5)) s.classList.add("on");
+    bar.appendChild(s);
+  }
+}
+function registerAnswer(isCorrect){
+  if(isCorrect){
+    round.correct++;
+    round.streak++;
+    round.bestStreak = Math.max(round.bestStreak, round.streak);
+  } else {
+    round.streak = 0;
+  }
+  $("roundStars").textContent = round.correct;
+}
+
+/* ---------- MULTIPLE CHOICE + LISTEN ---------- */
+function renderQuestion(){
+  if(round.index >= round.words.length){ finishRound(); return; }
+  updateProgress();
+  const word = round.words[round.index];
+  const lvl = LEVELS[round.level];
+  const cat = CATEGORIES[round.category];
+  const pool = cat.words.filter(w=>w.en!==word.en);
+  const distractors = sample(pool, Math.min(lvl.choices-1, pool.length));
+  const options = shuffle([word, ...distractors]);
+
+  const card = $("quizCard");
+  if(round.exercise === "listen"){
+    card.innerHTML = `
+      <p class="sub">Lyt til ordet og vælg det rigtige billede</p>
+      <button class="speakbtn" id="playSound">🔊 Afspil ordet igen</button>
+      <div class="choices" id="choiceArea"></div>
+      <div class="feedback" id="feedback"></div>
+    `;
+    $("playSound").addEventListener("click", ()=>speak(word.en));
+    const area = $("choiceArea");
+    options.forEach(opt=>{
+      const b = document.createElement("button");
+      b.className = "choice emoji-choice";
+      b.textContent = opt.emoji;
+      b.addEventListener("click", ()=>handleChoice(b, opt, word, options));
+      area.appendChild(b);
+    });
+    setTimeout(()=>speak(word.en), 300);
+  } else {
+    card.innerHTML = `
+      ${lvl.icons ? `<div class="prompt-emoji">${word.emoji}</div>` : ""}
+      <div class="prompt-word">${word.en}</div>
+      <p class="sub">Hvad betyder ordet på dansk?</p>
+      <div class="choices" id="choiceArea"></div>
+      <div class="feedback" id="feedback"></div>
+    `;
+    const area = $("choiceArea");
+    options.forEach(opt=>{
+      const b = document.createElement("button");
+      b.className = "choice";
+      b.textContent = opt.da;
+      b.addEventListener("click", ()=>handleChoice(b, opt, word, options));
+      area.appendChild(b);
+    });
+  }
+}
+function handleChoice(btn, opt, word, options){
+  const area = $("choiceArea");
+  const buttons = [...area.querySelectorAll("button")];
+  buttons.forEach(b=>b.disabled = true);
+  const isCorrect = opt.en === word.en;
+  if(isCorrect){
+    btn.classList.add("correct");
+  } else {
+    btn.classList.add("wrong");
+    const correctBtn = buttons.find(b => b.textContent === (round.exercise==="listen" ? word.emoji : word.da));
+    if(correctBtn) correctBtn.classList.add("correct");
+  }
+  const fb = $("feedback");
+  fb.textContent = isCorrect ? PRAISE[Math.floor(Math.random()*PRAISE.length)] : ENCOURAGE[Math.floor(Math.random()*ENCOURAGE.length)];
+  fb.className = "feedback " + (isCorrect ? "good":"bad");
+  registerAnswer(isCorrect);
+  setTimeout(()=>{ round.index++; renderQuestion(); }, 1100);
+}
+
+/* ---------- SPELLING ---------- */
+function renderSpellQuestion(){ /* unused: spelling handled inline below via exercise switch */ }
+function renderQuestionRouter(){}
+
+// override renderQuestion dispatch for spell
+const _origRenderQuestion = renderQuestion;
+renderQuestion = function(){
+  if(round.exercise === "spell"){ renderSpell(); return; }
+  _origRenderQuestion();
+};
+
+function renderSpell(){
+  if(round.index >= round.words.length){ finishRound(); return; }
+  updateProgress();
+  const word = round.words[round.index];
+  const card = $("quizCard");
+  const pattern = "_ ".repeat(word.en.replace(/\s/g,"").length).trim();
+  card.innerHTML = `
+    <div class="prompt-emoji">${word.emoji}</div>
+    <div class="prompt-word">${word.da}</div>
+    <p class="sub">Skriv ordet på engelsk</p>
+    <div class="letterhint" id="letterHint">${pattern}</div>
+    <input type="text" id="spellInput" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="skriv her...">
+    <button class="btn" id="spellSubmit">Tjek svar ✔️</button>
+    <button class="speakbtn" id="spellHint">💡 Hint (${round.hintsLeft} tilbage)</button>
+    <div class="feedback" id="feedback"></div>
+  `;
+  let revealed = 0;
+  const target = word.en;
+  $("spellHint").addEventListener("click", ()=>{
+    if(round.hintsLeft<=0) return;
+    round.hintsLeft--;
+    revealed = Math.min(revealed+1, target.length);
+    $("letterHint").textContent = target.split("").map((ch,i)=> i<revealed ? ch.toUpperCase() : (ch===" "?" ":"_")).join(" ");
+    $("spellHint").textContent = `💡 Hint (${round.hintsLeft} tilbage)`;
+    speak(target);
+  });
+  const submit = ()=>{
+    const val = $("spellInput").value.trim().toLowerCase();
+    const isCorrect = val === target.toLowerCase();
+    $("spellInput").disabled = true;
+    $("spellSubmit").disabled = true;
+    $("spellHint").disabled = true;
+    const fb = $("feedback");
+    if(isCorrect){
+      fb.textContent = PRAISE[Math.floor(Math.random()*PRAISE.length)];
+      fb.className = "feedback good";
+    } else {
+      fb.textContent = "Rigtige ord: " + target;
+      fb.className = "feedback bad";
+    }
+    registerAnswer(isCorrect);
+    setTimeout(()=>{ round.index++; renderQuestion(); }, 1400);
+  };
+  $("spellSubmit").addEventListener("click", submit);
+  $("spellInput").addEventListener("keydown", e=>{ if(e.key==="Enter") submit(); });
+  $("spellInput").focus();
+}
+
+/* ---------- MATCH PAIRS ---------- */
+function renderMatchQuestion(){
+  const lvl = LEVELS[round.level];
+  const cat = CATEGORIES[round.category];
+  const n = Math.min(lvl.pairs, cat.words.length);
+  const words = sample(cat.words, n);
+  round.matchWords = words;
+  round.matchedCount = 0;
+  round.picked = [];
+  round.correct = 0;
+
+  let cards = [];
+  words.forEach((w,i)=>{
+    cards.push({ id:i, type:"en", label:w.en });
+    cards.push({ id:i, type:"da", label: lvl.icons ? (w.da+" "+w.emoji) : w.da });
+  });
+  cards = shuffle(cards);
+
+  $("quizCatLabel").textContent = cat.emoji + " " + cat.name + " · " + LEVELS[round.level].label + " · Match";
+  $("qProgress").textContent = `Find alle ${n} par`;
+  $("streakBar").innerHTML = "";
+  $("roundStars").textContent = 0;
+
+  const card = $("quizCard");
+  card.innerHTML = `<div class="matchgrid" id="matchGrid"></div><div class="feedback" id="feedback"></div>`;
+  const grid = $("matchGrid");
+  cards.forEach((c,idx)=>{
+    const el = document.createElement("button");
+    el.className = "matchcard";
+    el.textContent = c.label;
+    el.dataset.idx = idx;
+    el.addEventListener("click", ()=>onMatchCardClick(el, c, cards));
+    grid.appendChild(el);
+  });
+}
+function onMatchCardClick(el, c, cards){
+  if(el.classList.contains("matched") || el.classList.contains("picked")) return;
+  if(round.picked.length >= 2) return;
+  el.classList.add("picked");
+  round.picked.push({el,c});
+  if(round.picked.length === 2){
+    const [a,b] = round.picked;
+    const isMatch = a.c.id === b.c.id && a.c.type !== b.c.type;
+    if(isMatch){
+      setTimeout(()=>{
+        a.el.classList.remove("picked"); b.el.classList.remove("picked");
+        a.el.classList.add("matched"); b.el.classList.add("matched");
+        round.matchedCount++;
+        round.correct++;
+        $("roundStars").textContent = round.correct;
+        round.picked = [];
+        if(round.matchedCount === round.matchWords.length){
+          round.streak = round.matchedCount;
+          round.bestStreak = round.matchedCount;
+          round.index = round.words.length; // mark done
+          setTimeout(finishRound, 500);
+        }
+      }, 350);
+    } else {
+      a.el.classList.add("wrongflash"); b.el.classList.add("wrongflash");
+      setTimeout(()=>{
+        a.el.classList.remove("picked","wrongflash");
+        b.el.classList.remove("picked","wrongflash");
+        round.picked = [];
+      }, 700);
+    }
+  }
+}
+
+/* ---------- FINISH ROUND ---------- */
+function finishRound(){
+  const total = round.exercise === "match" ? round.matchWords.length : round.words.length;
+  const correct = round.correct;
+  const accuracy = total>0 ? correct/total : 0;
+  let starsEarned = accuracy>=0.99 ? 3 : accuracy>=0.7 ? 2 : accuracy>=0.4 ? 1 : 0;
+
+  state.totalStars += correct;
+  state.roundsPlayed += 1;
+  state.bestStreakEver = Math.max(state.bestStreakEver, round.bestStreak||0);
+  const prevBest = state.catBestStars[round.category] || 0;
+  state.catBestStars[round.category] = Math.max(prevBest, starsEarned);
+  if(accuracy>=0.99) state.hadPerfectRound = true;
+
+  const newlyUnlocked = [];
+  BADGES.forEach(b=>{
+    if(!state.badges.includes(b.id) && b.cond(state)){
+      state.badges.push(b.id);
+      newlyUnlocked.push(b);
+    }
+  });
+  saveState();
+
+  $("summaryTitle").textContent = starsEarned>=2 ? "Fantastisk klaret!" : starsEarned>=1 ? "Godt gået!" : "Godt forsøgt!";
+  $("summaryMascot").textContent = starsEarned>=2 ? "🎉" : starsEarned>=1 ? "🙂" : "💪";
+  $("summaryStars").textContent = "⭐".repeat(starsEarned) + "☆".repeat(3-starsEarned);
+  $("sumCorrect").textContent = `${correct}/${total}`;
+  $("sumStreak").textContent = round.bestStreak || 0;
+
+  const badgeArea = $("newBadgeArea");
+  badgeArea.innerHTML = "";
+  if(newlyUnlocked.length){
+    const h = document.createElement("p");
+    h.style.textAlign = "center";
+    h.style.fontWeight = "bold";
+    h.textContent = "Nyt mærke låst op!";
+    badgeArea.appendChild(h);
+    const row = document.createElement("div");
+    row.className = "badgegrid";
+    newlyUnlocked.forEach(b=>{
+      const d = document.createElement("div");
+      d.className = "badge";
+      d.textContent = b.emoji + " " + b.name;
+      row.appendChild(d);
+    });
+    badgeArea.appendChild(row);
+  }
+
+  showScreen("screen-summary");
+  if(starsEarned>=2 || newlyUnlocked.length) spawnConfetti();
+}
+
+/* ---------- BADGES SCREEN ---------- */
+function renderBadges(){
+  const list = $("badgeList");
+  list.innerHTML = "";
+  BADGES.forEach(b=>{
+    const unlocked = state.badges.includes(b.id);
+    const d = document.createElement("div");
+    d.className = "badge";
+    d.style.opacity = unlocked ? "1" : ".35";
+    d.textContent = (unlocked ? b.emoji : "🔒") + " " + b.name;
+    list.appendChild(d);
+  });
+}
+
+/* ---------- INIT ---------- */
+if(state.name){
+  enterMenu();
+}
+</script>
+</body>
+</html>
